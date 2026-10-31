@@ -1,0 +1,221 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>المافيا أونلاين</title>
+<style>
+:root{--bg:#0a0a0c;--sf:#15151a;--tx:#f3f0e8;--mu:#9a968a;--rd:#c81e1e;--gold:#d4af37;--bd:#2a2a33;--gr:#22c55e;color-scheme:dark;box-sizing:border-box}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:radial-gradient(circle at top,#1c0a0a,var(--bg) 55%) fixed;color:var(--tx);font-family:system-ui,"Segoe UI",Tahoma,Arial,sans-serif;line-height:1.6;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:780px;margin:0 auto;padding:14px}h1{text-align:center;margin:6px 0 12px;font-size:26px;color:var(--gold);letter-spacing:1px}
+.box{background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:14px;margin-bottom:12px}.box b{color:var(--gold)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin:10px 0}
+.card{background:#101014;border:1px solid var(--bd);border-radius:14px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;color:var(--tx);font:inherit;min-height:86px}
+.card .av{font-size:30px}.card small{color:var(--mu);font-size:11px;min-height:16px}.card.dead{opacity:.4}.card.me{border-color:var(--gold)}
+.card.sel{border:2px solid var(--rd);cursor:pointer}.card.chosen{background:var(--rd)}.card.chosen small{color:#fff}
+@keyframes pl{50%{transform:scale(1.05)}}.card.speaking{border:2px solid var(--gr);box-shadow:0 0 16px var(--gr);animation:pl 1s infinite}
+.btn{background:var(--rd);color:#fff;border:1px solid var(--gold);border-radius:12px;padding:11px 18px;font:inherit;font-weight:700;cursor:pointer;margin:4px}
+.btn.ghost{background:transparent;color:var(--gold)}.btn.gold{background:var(--gold);color:#111}.btn.sm{padding:5px 12px}.btn:disabled{opacity:.4}
+.row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center}.top{display:flex;justify-content:space-between;align-items:center;font-weight:700;gap:6px}
+input[type=text]{font:inherit;color:var(--tx);background:#0d0d10;border:1px solid var(--bd);border-radius:10px;padding:9px;width:100%;margin:4px 0}input[type=range]{width:100%;accent-color:var(--rd)}
+.pick{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}.pick button{font-size:24px;background:#0d0d10;border:1px solid var(--bd);border-radius:10px;padding:2px 6px;cursor:pointer}.pick .on{border:2px solid var(--gold)}
+.role{padding:12px;border-radius:14px;margin:8px 0;background:#101014;border:2px solid var(--rc,#888);display:flex;gap:12px;align-items:center}.role .ri{font-size:44px}.role small{color:var(--mu)}
+.spk{text-align:center;padding:16px;border-radius:16px;background:linear-gradient(135deg,#14532d,#0c4a6e);margin:8px 0}.spk .big{font-size:52px}.spk h2{margin:0}.cdn{font-size:46px;font-weight:800;color:var(--gold)}
+.lvlbox{height:8px;background:#0006;border-radius:6px;overflow:hidden;margin-top:8px}#lvl{height:100%;width:0;background:var(--gr);transition:width .08s}
+.win{text-align:center;border-radius:20px;padding:24px 12px;margin:8px 0;border:2px solid var(--gold)}.win.citizens{background:linear-gradient(135deg,#0c4a6e,#14532d)}.win.mafia{background:linear-gradient(135deg,#450a0a,#991b1b)}.win.clown{background:linear-gradient(135deg,#581c87,#a16207)}.big{font-size:60px}
+.bar{height:10px;background:var(--bd);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+.chip{display:inline-block;border:1px solid var(--bd);border-radius:20px;padding:2px 10px;margin:2px;font-size:13px}
+.li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--bd);padding:5px 0;font-size:14px}.mu{color:var(--mu)}.log{max-height:190px;overflow-y:auto}
+.msgs{height:130px;overflow-y:auto;font-size:14px;margin:6px 0}.ghost-box{border-color:#5b21b6;background:#12091f}.cin{display:flex;gap:6px}
+#toast{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#000;border:1px solid var(--gold);color:#fff;padding:10px 18px;border-radius:12px;z-index:9;max-width:90%}
+</style></head><body><main><div id="app"></div></main><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ===== الإعدادات: ضع بيانات مشروعك (Supabase → Project Settings → API) ===== */
+const SUPABASE_URL='PASTE_PROJECT_URL', SUPABASE_KEY='PASTE_ANON_PUBLIC_KEY';
+/* اختياري: خادم TURN لتحسين اتصال الصوت على الشبكات الصعبة (من لوحة مزوّدك) */
+const TURN={url:'',username:'',credential:''};
+/* ============================================================================ */
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const AVS=['😎','🕵️','🦊','🐺','🦅','🐲','👽','🤖','🦁','🐼','🎭','🐯','🦉','🐸'];
+const R={citizen:{n:'مواطن',i:'🙂',t:'c',col:'#9ca3af',d:'اكشف المافيا بالنقاش والتصويت.'},
+killer:{n:'المافيا القاتل',i:'🔪',t:'m',col:'#dc2626',d:'تقتل لاعباً كل ليلة، ولا تستهدف زملاءك.'},
+silencer:{n:'المافيا الصامتة',i:'🤫',t:'m',col:'#a855f7',d:'تُسكت لاعباً كل ليلة فلا يتحدث في النقاش التالي.'},
+boss:{n:'الزعيم',i:'👑',t:'m',col:'#d4af37',d:'قائد المافيا: يقتل كل ليلة ويظهر بريئاً أمام المحقق.'},
+detective:{n:'المحقق',i:'🕵️',t:'c',col:'#38bdf8',d:'تتحقق من لاعب كل ليلة.'},
+guard:{n:'الحارس',i:'🛡️',t:'c',col:'#22c55e',d:'تحمي لاعباً كل ليلة من القتل.'},
+lawyer:{n:'المحامي',i:'⚖️',t:'c',col:'#f59e0b',d:'تحمي لاعباً من الطرد بالتصويت مرة واحدة.'},
+sniper:{n:'القناص',i:'🎯',t:'c',col:'#f97316',d:'رصاصة واحدة طوال اللعبة (في مرحلة التصويت).'},
+clown:{n:'المهرج',i:'🤡',t:'x',col:'#ec4899',d:'أقنعهم بطردك بالتصويت لتفوز وحدك.'}};
+const TEAM={c:'المواطنون',m:'المافيا',x:'المهرج'};
+const WIN={citizens:['🏙️','فاز المواطنون!','سقطت عصابة المافيا وعادت المدينة آمنة'],mafia:['🩸','فازت المافيا!','المدينة الآن في قبضة العائلة'],clown:['🤡','فاز المهرج!','الضحكة الأخيرة له']};
+const isM=r=>r==='boss'||r==='killer'||r==='silencer';
+let sb,S={me:null,prof:null,rid:null,room:null,pl:[],ev:[],msg:[],sec:{},insp:{},chosen:{},snipe:false,sig:'',nev:0,lm:null,tk:false,ch:null,ti:null};
+let AC;function tone(f,d=.2,t='sine',w=0){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),T=AC.currentTime+w;o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.12,T);g.gain.exponentialRampToValueAtTime(.001,T+d);o.connect(g);g.connect(AC.destination);o.start(T);o.stop(T+d)}catch(e){}}
+const SFX={kill:()=>{tone(70,.35,'square');tone(50,.45,'sawtooth',.1)},expel:()=>[400,300,200,120].forEach((f,i)=>tone(f,.25,'sawtooth',i*.15)),silence:()=>[500,350].forEach((f,i)=>tone(f,.3,'triangle',i*.2)),save:()=>[600,800].forEach((f,i)=>tone(f,.2,'triangle',i*.12)),vote:()=>tone(660,.1,'triangle'),win:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.3,'triangle',i*.15)),lose:()=>[300,250,200].forEach((f,i)=>tone(f,.4,'sine',i*.25))};
+const toast=t=>{const d=$('#toast');d.textContent=t;d.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>d.style.display='none',3500)};
+const view=h=>$('#app').innerHTML=h;
+async function rpc(f,a){const r=await sb.rpc(f,a);if(r.error){toast(r.error.message);return null}return{d:r.data}}
+let CFG=null;const CFG_KEY='mafia_cfg_v1';
+/* الأولوية: الإعدادات المحفوظة في هذا المتصفح، ثم القيم المكتوبة أعلى الملف (التي يراها أصدقاؤك بعد النشر) */
+function loadCfg(){try{const c=JSON.parse(localStorage.getItem(CFG_KEY)||'null');if(c&&c.url&&c.key)return c}catch(e){}
+ return(SUPABASE_URL.startsWith('PASTE')||SUPABASE_KEY.startsWith('PASTE'))?null:{url:SUPABASE_URL,key:SUPABASE_KEY}}
+async function testCfg(url,key,log){
+ const L=(ok,m)=>log.push((ok?'✅ ':'❌ ')+m);
+ if(typeof supabase==='undefined'){L(0,'تعذر تحميل مكتبة Supabase: تحقق من الإنترنت ثم أعد تحميل الصفحة');return'fail'}
+ if(!/^https:\/\/[^\s\/]+\.[^\s\/]+$/.test(url)){L(0,'عنوان Project URL غير صحيح. مثال: https://abcdxyz.supabase.co');return'fail'}
+ if(!key||/\s/.test(key)){L(0,'أدخل مفتاح anon public كاملاً بلا مسافات');return'fail'}
+ if(key.startsWith('sb_secret_')){L(0,'هذا مفتاح سري! لا تضعه هنا أبداً. استخدم المفتاح العام (anon public)');return'fail'}
+ try{const p=JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));if(p.role==='service_role'){L(0,'هذا مفتاح service_role السري! لا تضعه هنا أبداً. استخدم anon public');return'fail'}}catch(e){}
+ try{const r=await fetch(url+'/auth/v1/settings',{headers:{apikey:key}});
+  if(r.status===401||r.status===403){L(0,'المفتاح مرفوض: انسخ anon public كاملاً من Project Settings ← API');return'fail'}
+  if(!r.ok){L(0,'استجابة غير متوقعة من الخادم ('+r.status+')');return'fail'}
+  L(1,'الاتصال بالمشروع ناجح والمفتاح صالح')}catch(e){L(0,'تعذر الوصول إلى العنوان: تحقق من الرابط ومن الإنترنت');return'fail'}
+ const c=supabase.createClient(url,key);
+ try{const {data:{session}}=await c.auth.getSession();if(!session){const r=await c.auth.signInAnonymously();if(r.error){L(0,'الدخول المجهول غير مفعّل: فعّل Allow anonymous sign-ins من Authentication ← Sign In / Providers ('+r.error.message+')');return'partial'}}L(1,'الدخول المجهول يعمل')}catch(e){L(0,'فشل اختبار الدخول: '+e.message);return'partial'}
+ const q=await c.rpc('public_rooms');
+ if(q.error){L(0,'قاعدة البيانات غير جاهزة: شغّل mafia_final.sql في SQL Editor ('+q.error.message+')');return'partial'}
+ L(1,'قاعدة البيانات جاهزة (دوال اللعبة موجودة)');return'ok'}
+function setupScreen(msg){const c=CFG||{url:'',key:''};
+ view(`<h1>🔌 ربط Supabase</h1><div class="box"><p class="mu">من لوحة Supabase افتح <b>Project Settings ← API</b>، وانسخ <b>Project URL</b> ومفتاح <b>anon public</b> (لا تستخدم service_role).</p>
+ <b>Project URL</b><input type="text" id="sUrl" dir="ltr" placeholder="https://xxxx.supabase.co" value="${esc(c.url)}">
+ <b>Anon public key</b><input type="text" id="sKey" dir="ltr" placeholder="eyJ..." value="${esc(c.key)}">
+ <div class="row"><button class="btn" id="sGo">💾 حفظ واختبار الاتصال</button>${CFG?'<button class="btn ghost" id="sClr">🗑️ مسح الإعدادات</button>':''}${S.prof?'<button class="btn ghost" id="sBk">رجوع</button>':''}</div>
+ <div id="sLog" style="margin-top:10px">${msg?'❌ '+esc(msg):''}</div><div id="sSnip"></div></div>`);
+ $('#sGo').onclick=async()=>{const b=$('#sGo'),url=$('#sUrl').value.trim().replace(/\/+$/,''),key=$('#sKey').value.trim(),log=[];
+  b.disabled=true;$('#sLog').textContent='⏳ جارٍ اختبار الاتصال...';
+  const res=await testCfg(url,key,log);b.disabled=false;$('#sLog').innerHTML=log.map(x=>esc(x)).join('<br>');
+  if(res==='fail')return;
+  try{localStorage.setItem(CFG_KEY,JSON.stringify({url,key}))}catch(e){}
+  CFG={url,key};
+  $('#sSnip').innerHTML=`<p class="mu">✔️ حُفظت الإعدادات في هذا المتصفح. لكي يعمل الرابط عند أصدقائك ضع هذا السطر في index.html قبل النشر (الإعدادات المحفوظة هنا تبقى في متصفحك فقط):</p><input type="text" dir="ltr" readonly onclick="this.select()" value="${esc("const SUPABASE_URL='"+url+"', SUPABASE_KEY='"+key+"';")}">`;
+  if(res==='ok'){$('#sLog').innerHTML+='<br><b>🎉 كل شيء جاهز، جارٍ فتح اللعبة...</b>';setTimeout(boot,1500)}
+  else $('#sLog').innerHTML+='<br>⚠️ أصلح البند الفاشل ثم اضغط الزر مجدداً.'};
+ if($('#sClr'))$('#sClr').onclick=()=>{try{localStorage.removeItem(CFG_KEY)}catch(e){}CFG=null;S.prof=null;boot()};
+ if($('#sBk'))$('#sBk').onclick=home}
+async function boot(){
+ CFG=loadCfg();
+ if(!CFG)return setupScreen();
+ if(typeof supabase==='undefined')return setupScreen('تعذر تحميل مكتبة Supabase: تحقق من الإنترنت.');
+ try{
+  sb=supabase.createClient(CFG.url,CFG.key);
+  let {data:{session}}=await sb.auth.getSession();
+  if(!session){const r=await sb.auth.signInAnonymously();if(r.error)return setupScreen('فشل الدخول: '+r.error.message+' — فعّل Anonymous sign-ins في Supabase.');session=r.data.session}
+  S.me=session.user.id;await loadProf();
+ }catch(e){return setupScreen('تعذر الاتصال: '+e.message)}
+ if(S.dbErr)return setupScreen('قاعدة البيانات غير جاهزة: '+S.dbErr+' — شغّل mafia_final.sql.');
+ if(!S.prof)return profileScreen();route()}
+async function loadProf(){const r=await sb.from('profiles').select('*').eq('id',S.me).maybeSingle();S.prof=r.data;S.dbErr=r.error?r.error.message:null}
+async function route(){const c=new URLSearchParams(location.search).get('r');if(c){history.replaceState(null,'',location.pathname);return enter(c)}home()}
+function profileScreen(){let av=S.prof?.avatar||AVS[0];
+ view(`<h1>👤 ملفك الشخصي</h1><div class="box"><input type="text" id="nm" maxlength="12" placeholder="اسمك المستعار" value="${esc(S.prof?.name||'')}"><div class="pick" id="ap">${AVS.map(a=>`<button data-a="${a}" class="${a===av?'on':''}">${a}</button>`).join('')}</div><button class="btn" id="sv">حفظ</button></div>`);
+ document.querySelectorAll('#ap button').forEach(b=>b.onclick=()=>{av=b.dataset.a;document.querySelectorAll('#ap button').forEach(x=>x.classList.toggle('on',x===b))});
+ $('#sv').onclick=async()=>{const n=$('#nm').value.trim();if(n.length<2)return toast('الاسم من حرفين على الأقل');if(await rpc('set_profile',{p_name:n,p_avatar:av})){await loadProf();route()}}}
+function cleanup(){vClose(true);if(S.ch)sb.removeChannel(S.ch);clearInterval(S.ti);S.ch=null;S.rid=null;S.room=null}
+async function home(){cleanup();await loadProf();const p=S.prof;
+ const [pub,mine]=await Promise.all([sb.rpc('public_rooms'),sb.from('players').select('room_id,rooms(code,phase)').eq('user_id',S.me)]);
+ const act=(mine.data||[]).filter(x=>x.rooms&&x.rooms.phase!=='ended'),L=1+Math.floor(Math.sqrt(p.xp/60)),lo=60*(L-1)**2,hi=60*L*L,pc=Math.round((p.xp-lo)/(hi-lo)*100);
+ view(`<h1>🎭 المافيا أونلاين</h1>
+ <div class="box"><div class="row" style="justify-content:flex-start;gap:12px"><div style="font-size:46px">${esc(p.avatar)}</div><div style="flex:1"><b>${esc(p.name)}</b> <button class="btn ghost sm" id="ep">تعديل</button><div>المستوى <b>${L}</b> · ${p.xp} خبرة · ${p.games} لعبة · ${p.wins} فوز · ${p.games-p.wins} خسارة (${p.games?Math.round(p.wins/p.games*100):0}%)</div><div class="bar"><i style="width:${pc}%"></i></div></div></div></div>
+ ${act.length?`<div class="box"><b>↩️ العودة إلى لعبتك</b>${act.map(x=>`<div class="li"><span>غرفة ${x.rooms.code}</span><button class="btn sm" data-c="${x.rooms.code}">عودة</button></div>`).join('')}</div>`:''}
+ <div class="box"><b>إنشاء غرفة</b><div>عدد اللاعبين الأقصى: <b id="mxv">12</b></div><input type="range" id="mx" min="5" max="12" value="12"><div class="row"><button class="btn" id="cp">🔒 خاصة</button><button class="btn" id="cu">🌍 عامة</button></div>
+ <input type="text" id="jc" maxlength="5" placeholder="رمز الدعوة" style="text-transform:uppercase;text-align:center"><div class="row"><button class="btn ghost" id="jn">انضمام بالرمز</button></div></div>
+ <div class="box"><div class="top"><b>🌍 الغرف العامة المفتوحة</b><button class="btn ghost sm" id="rf">تحديث</button></div>${(pub.data||[]).length?pub.data.map(r=>`<div class="li"><span>غرفة ${r.code} · ${r.n}/${r.mx} لاعب</span><button class="btn sm" data-c="${r.code}">انضم</button></div>`).join(''):'<p class="mu">لا توجد غرف عامة الآن. أنشئ واحدة!</p>'}</div><div class="row"><button class="btn ghost sm" id="hcfg">⚙️ إعدادات الاتصال</button></div>`);
+ document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>enter(b.dataset.c));
+ $('#ep').onclick=profileScreen;$('#rf').onclick=home;$('#hcfg').onclick=()=>setupScreen();$('#mx').oninput=e=>$('#mxv').textContent=e.target.value;
+ $('#cp').onclick=()=>mk(false);$('#cu').onclick=()=>mk(true);
+ $('#jn').onclick=()=>{const c=$('#jc').value.trim();if(c)enter(c)}}
+async function mk(pub){const r=await rpc('create_room',{p_public:pub,p_max:+$('#mx').value});if(r)enter(r.d)}
+async function enter(code){const r=await rpc('join_room',{p_code:code});if(r)openRoom(r.d);else home()}
+function openRoom(id){cleanup();S.rid=id;S.sig='';S.nev=0;S.lm=null;S.chosen={};S.insp={};S.snipe=false;S.first=true;
+ view(`<div id="main"></div><section class="box" id="cbox"><b>💬 الدردشة</b><div class="msgs" id="msgs"></div></section><section class="box ghost-box" id="gbox" style="display:none"><b>👻 غرفة الموتى</b> <span class="mu">(لا يسمعكم الأحياء)</span><div class="msgs" id="gmsgs"></div></section><div class="cin"><input type="text" id="ci" maxlength="120" placeholder="اكتب رسالة..."><button class="btn" id="cs">إرسال</button></div>`);
+ const send=async()=>{const i=$('#ci'),t=i.value.trim();if(!t)return;i.value='';await rpc('send_message',{p_room:id,p_body:t});refresh()};
+ $('#cs').onclick=send;$('#ci').onkeydown=e=>{if(e.key==='Enter')send()};
+ const deb=()=>{clearTimeout(S.dt);S.dt=setTimeout(refresh,150)};
+ S.ch=sb.channel('room-'+id);
+ [['rooms','id=eq.'+id],['players','room_id=eq.'+id],['events','room_id=eq.'+id],['messages','room_id=eq.'+id]].forEach(([t,f])=>S.ch.on('postgres_changes',{event:'*',schema:'public',table:t,filter:f},deb));
+ S.ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'signals',filter:'to_id=eq.'+S.me},e=>onSignal(e.new));
+ S.ch.subscribe();let n=0;
+ S.ti=setInterval(()=>{if(!S.room)return;n++;const r=S.room;if(r.phase_end){const s=Math.max(0,Math.round((new Date(r.phase_end)-Date.now())/1000)),c=$('#cd');if(c)c.textContent='⏳ '+s+' ث';const c2=$('#cd2');if(c2)c2.textContent=s;if(s===0&&!S.tk){S.tk=true;setTimeout(async()=>{await sb.rpc('tick',{p_room:S.rid});S.tk=false;refresh()},Math.random()*1200)}}if(n%4===0)refresh()},1000);
+ refresh()}
+addEventListener('online',()=>S.rid&&refresh());document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.rid)refresh()});
+async function refresh(){const id=S.rid;if(!id)return;
+ const [r,p,e,m,s]=await Promise.all([sb.from('rooms').select('*').eq('id',id).maybeSingle(),sb.from('players').select('*').eq('room_id',id),sb.from('events').select('*').eq('room_id',id).order('id'),sb.from('messages').select('*').eq('room_id',id).order('id',{ascending:false}).limit(80),sb.from('secrets').select('*').eq('room_id',id)]);
+ if(S.rid!==id)return;if(r.error||p.error)return;if(!r.data){toast('الغرفة لم تعد موجودة');return home()}
+ S.room=r.data;S.pl=(p.data||[]).sort((a,b)=>(a.seat??99)-(b.seat??99)||a.name.localeCompare(b.name));S.ev=e.data||[];S.msg=(m.data||[]).reverse();S.sec={};(s.data||[]).forEach(x=>S.sec[x.user_id]=x);
+ if(S.sec[S.me]?.role==='detective'){const q=await sb.rpc('my_inspections',{p_room:id});(q.data||[]).forEach(x=>S.insp[x.target]=x.verdict)}
+ const lm=S.msg.at(-1)?.id;if(lm!==S.lm){S.lm=lm;const f=(a,sel)=>{const d=$(sel);if(d){d.innerHTML=a.map(x=>`<div>${esc(x.name)}: ${esc(x.body)}</div>`).join('');d.scrollTop=1e9}};f(S.msg.filter(x=>!x.dead),'#msgs');f(S.msg.filter(x=>x.dead),'#gmsgs')}
+ if(!S.first)S.ev.slice(S.nev).forEach(x=>{const f=SFX[x.kind];if(f)f()});S.nev=S.ev.length;
+ voiceSync();
+ const sig=JSON.stringify([S.room.phase,S.room.speaker,S.room.turn_idx,S.room.day,S.room.winner,S.room.silenced,S.pl.map(x=>[x.user_id,x.alive]),Object.keys(S.sec).length,S.ev.length,S.chosen,S.snipe,S.insp]);
+ if(sig!==S.sig){S.sig=sig;render();if(S.room.phase==='ended'&&!S.first)(winnerIsMe()?SFX.win:SFX.lose)()}
+ S.first=false}
+function winnerIsMe(){const r=S.sec[S.me]?.role,w=S.room.winner;return w==='mafia'?isM(r):w==='clown'?r==='clown':!isM(r)&&r!=='clown'}
+function grid(fn){const rm=S.room,sil=rm.silenced||[];return `<div class="grid">`+S.pl.map(p=>{const ok=fn&&fn(p),sc=S.sec[p.user_id],mine=p.user_id===S.me,key=rm.phase[0]+rm.day,sp=rm.phase==='talk'&&rm.speaker===p.user_id,si=rm.phase==='talk'&&p.alive&&sil.includes(p.user_id);
+ const tag=sp?'🎙️ يتحدث':!p.alive&&sc?R[sc.role].i+' '+R[sc.role].n:mine?'أنت':si?'🤫 مُسكَت':S.insp[p.user_id]==='mafia'?'🔪 مافيا':S.insp[p.user_id]==='innocent'?'✅ بريء':(sc&&isM(sc.role)&&isM(S.sec[S.me]?.role)?R[sc.role].i+' زميل':'');
+ return `<button class="card ${sp?'speaking':''} ${p.alive?'':'dead'} ${ok?'sel':''} ${mine?'me':''} ${S.chosen[key]===p.user_id?'chosen':''}" data-id="${p.user_id}" ${ok?'':'disabled'}><span class="av">${p.alive?esc(p.avatar):'💀'}</span><b>${esc(p.name)}</b><small>${tag}</small></button>`}).join('')+`</div>`}
+function render(){const r=S.room,me=S.pl.find(p=>p.user_id===S.me),role=S.sec[S.me]?.role,alive=!!(me&&me.alive),key=r.phase[0]+r.day,sil=r.silenced||[];let body='',H=null;
+ const na=S.pl.filter(p=>p.alive).length,nd=S.pl.length-na;
+ const head=`<div class="top"><span>${r.phase==='lobby'?'🚪 غرفة '+r.code:r.phase==='night'?'🌙 الليلة '+r.day:r.phase==='talk'?'🗣️ النقاش':r.phase==='day'?'🗳️ التصويت':'🏁 انتهت اللعبة'}</span><span id="cd"></span><button class="btn ghost sm" id="lv">خروج</button></div>${r.phase==='lobby'||r.phase==='ended'?'':`<div class="mu">👥 الأحياء: <b>${na}</b> · 💀 الأموات: <b>${nd}</b></div>`}`;
+ const rc=role?`<div class="role" style="--rc:${R[role].col}"><div class="ri">${R[role].i}</div><div><b>${R[role].n}</b> <small>(${TEAM[R[role].t]})</small><br><small>${R[role].d}</small></div></div>`:'';
+ const ghost=me&&!alive&&r.phase!=='ended'?'<div class="box ghost-box">👻 أنت خارج المباراة: تشاهد فقط، ولا صوت ولا تصويت لك. تحدّث مع الأموات في غرفتهم أسفل الصفحة.</div>':'';
+ if(r.phase==='lobby'){const link=location.origin+location.pathname+'?r='+r.code;
+  body=`<div class="box"><b>اللاعبون (${S.pl.length}/${r.max_players})</b><div>${S.pl.map(p=>`<span class="chip">${esc(p.avatar)} ${esc(p.name)}${p.user_id===r.host?' 👑':''}</span>`).join('')}</div></div>
+  <div class="box"><div>رمز الدعوة: <b style="font-size:22px;letter-spacing:3px">${r.code}</b> <span class="mu">${r.is_public?'(عامة)':'(خاصة)'}</span></div><div class="mu" style="word-break:break-all">${esc(link)}</div><div class="row"><button class="btn gold" id="cp">📋 دعوة الأصدقاء</button><button class="btn ghost" id="mic">🎤 اختبار الميكروفون</button></div></div>
+  <div class="row">${r.host===S.me?`<button class="btn" id="go" ${S.pl.length<5?'disabled':''}>▶ ابدأ اللعبة ${S.pl.length<5?'(يلزم 5)':''}</button>`:'<span class="mu">بانتظار المضيف...</span>'}</div>`}
+ else if(r.phase==='night'){
+  const f1=['اختر ضحية المافيا',p=>p.alive&&!isM(S.sec[p.user_id]?.role)];
+  const NA={boss:f1,killer:f1,silencer:['اختر من تُسكته (لن يتحدث في النقاش القادم)',p=>p.alive&&!isM(S.sec[p.user_id]?.role)],guard:['من تحميه الليلة؟',p=>p.alive],detective:['من تتحقق منه؟',p=>p.alive&&p.user_id!==S.me&&!S.insp[p.user_id]],lawyer:['احمِ لاعباً من التصويت (مرة واحدة)',p=>p.alive]};
+  const a=alive&&NA[role];
+  body=rc+ghost+(alive?(a?`<p>${a[0]}</p>`+grid(a[1]):'<p>😴 ليلة هادئة... انتظر الصباح.</p>'+grid()):grid());
+  if(a)H=async id=>{const x=await rpc('night_action',{p_room:S.rid,p_target:id});if(x){S.chosen[key]=id;if(x.d)S.insp[id]=x.d;S.sig='';refresh()}}}
+ else if(r.phase==='talk'){const ids=S.pl.filter(p=>p.alive&&!sil.includes(p.user_id)),sp=S.pl.find(p=>p.user_id===r.speaker),mine=r.speaker===S.me,muted=S.pl.filter(p=>p.alive&&sil.includes(p.user_id));
+  body=rc+ghost+`<div class="spk"><div class="big">${sp?esc(sp.avatar):'🎙️'}</div><h2>🎙️ يتحدث الآن: ${sp?esc(sp.name):''}${mine?' (أنت)':''}</h2><div class="cdn" id="cd2">55</div><div>${mine?'ميكروفونك مفتوح والجميع يستمعون إليك.':'استمع... ميكروفونك مغلق حتى يأتي دورك.'}</div><div class="lvlbox"><div id="lvl"></div></div></div>`+grid()+`<div class="box"><b>ترتيب الكلام</b><div>${ids.map((p,i)=>`<span class="chip">${i<r.turn_idx?'✅':i===r.turn_idx?'🎙️':'⏳'} ${esc(p.name)}</span>`).join('')}${muted.map(p=>`<span class="chip">🤫 ${esc(p.name)} (مُسكَت)</span>`).join('')}</div></div>`+(r.host===S.me||mine?`<div class="row"><button class="btn ${mine?'':'gold'}" id="sk">${mine?'⏭ إنهاء دوري':'⏭ تخطي دور '+(sp?esc(sp.name):'')}</button></div>`:'')}
+ else if(r.phase==='day'){
+  body=rc+ghost+`<p>${alive?(S.snipe?'🎯 اختر هدف رصاصتك':'🗳️ صوّت لطرد لاعب (يمكنك تغيير صوتك)'):'أنت خارج اللعبة وتتابع فقط.'}</p>`+grid(p=>alive&&p.alive&&p.user_id!==S.me)+(alive&&role==='sniper'?`<div class="row"><button class="btn ${S.snipe?'ghost':''}" id="sn">${S.snipe?'إلغاء':'🎯 وضع الإطلاق'}</button></div>`:'');
+  H=async id=>{if(S.snipe){S.snipe=false;await rpc('sniper_shot',{p_room:S.rid,p_target:id})}else if(await rpc('cast_vote',{p_room:S.rid,p_target:id})){S.chosen[key]=id;SFX.vote()}S.sig='';refresh()}}
+ else{const w=WIN[r.winner]||WIN.citizens,won=winnerIsMe();
+  body=`<div class="win ${r.winner}"><div class="big">${w[0]}</div><h1>${w[1]}</h1><p>${w[2]}</p><h2>${won?'🏆 فزت!':'💔 خسرت هذه الجولة'}</h2></div><div class="box"><b>الأدوار</b>${S.pl.map(p=>{const sc=S.sec[p.user_id];return `<div class="li"><span>${esc(p.avatar)} ${esc(p.name)}</span><span>${sc?R[sc.role].i+' '+R[sc.role].n:''}</span></div>`}).join('')}</div><div class="row"><button class="btn gold" id="hm">القائمة الرئيسية</button></div>`}
+ const log=S.ev.slice().reverse().map(e=>`<div class="li"><span>${esc(e.body)}</span></div>`).join('');
+ $('#main').innerHTML=head+body+(log?`<div class="box"><b>📜 سجل الأحداث</b><div class="log">${log}</div></div>`:'');
+ /* الدردشة: الأحياء يكتبون في اللوبي/التصويت/النهاية فقط، والموتى في غرفتهم */
+ const dead=!!(me&&!alive&&r.phase!=='ended'),lock=alive&&(r.phase==='night'||r.phase==='talk');
+ $('#gbox').style.display=(dead||r.phase==='ended')?'block':'none';
+ $('#ci').disabled=lock;$('#cs').disabled=lock;$('#ci').placeholder=dead?'اكتب في غرفة الموتى 👻':lock?'الكتابة مقفلة الآن':'اكتب رسالة...';
+ document.querySelectorAll('.card.sel').forEach(b=>b.onclick=()=>H&&H(b.dataset.id));
+ const g=s=>$(s);
+ g('#lv').onclick=async()=>{if(r.phase==='lobby')await rpc('leave_room',{p_room:S.rid});home()};
+ if(g('#hm'))g('#hm').onclick=home;
+ if(g('#mic'))g('#mic').onclick=micTest;
+ if(g('#sk'))g('#sk').onclick=async()=>{await rpc('skip_turn',{p_room:S.rid});refresh()};
+ if(g('#sn'))g('#sn').onclick=()=>{S.snipe=!S.snipe;S.sig='';refresh()};
+ if(g('#go'))g('#go').onclick=async()=>{await rpc('start_game',{p_room:S.rid});refresh()};
+ if(g('#cp'))g('#cp').onclick=async()=>{const l=location.origin+location.pathname+'?r='+r.code;try{if(navigator.share)await navigator.share({title:'المافيا',text:'انضم للعبة!',url:l});else{await navigator.clipboard.writeText(l);toast('تم نسخ الرابط')}}catch(e){prompt('انسخ الرابط',l)}}}
+/* ===== الصوت (WebRTC): المتحدث وحده يبث، والبقية يستمعون. الخادم يفرض الدور (حي، غير مُسكَت، دوره) ===== */
+const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}].concat(TURN.url?[{urls:TURN.url,username:TURN.username,credential:TURN.credential}]:[])};
+let V={pcs:{},stream:null,k:-1,pend:{},busy:false,mt:false};
+const turnKey=()=>S.room.day*100+S.room.turn_idx;
+const sendSig=async(to,kind,payload)=>{await sb.rpc('send_signal',{p_room:S.rid,p_to:to,p_kind:kind,p_payload:payload})};
+function meter(stream){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const an=AC.createAnalyser();an.fftSize=256;AC.createMediaStreamSource(stream).connect(an);const buf=new Uint8Array(an.frequencyBinCount);V.mt=true;(function lp(){if(!V.mt)return;an.getByteFrequencyData(buf);const v=buf.reduce((a,b)=>a+b,0)/buf.length,e=$('#lvl');if(e)e.style.width=Math.min(100,v*2.2)+'%';requestAnimationFrame(lp)})()}catch(e){}}
+function vClose(all){V.mt=false;Object.values(V.pcs).forEach(p=>{try{p.close()}catch(e){}});V.pcs={};V.pend={};document.querySelectorAll('audio.rv').forEach(a=>a.remove());if(V.stream){V.stream.getTracks().forEach(t=>t.stop());V.stream=null}if(all)V.k=-1}
+async function micTest(){try{const s=await navigator.mediaDevices.getUserMedia({audio:true});s.getTracks().forEach(t=>t.stop());toast('✅ الميكروفون يعمل')}catch(e){toast('تعذر الوصول للميكروفون: اسمح به من إعدادات المتصفح')}}
+function mkpc(uid,k){const pc=new RTCPeerConnection(ICE);V.pcs[uid]=pc;pc.onicecandidate=e=>{if(e.candidate)sendSig(uid,'ice',{k,c:e.candidate})};return pc}
+async function sendOffer(uid,k){const pc=mkpc(uid,k);V.stream.getTracks().forEach(t=>pc.addTrack(t,V.stream));await pc.setLocalDescription(await pc.createOffer());sendSig(uid,'offer',{k,sdp:pc.localDescription})}
+async function voiceSync(){const r=S.room;if(!r)return;
+ if(r.phase!=='talk'){if(V.k!==-1||V.stream||Object.keys(V.pcs).length)vClose(true);return}
+ const k=turnKey();if(k!==V.k){vClose(false);V.k=k}
+ if(r.speaker!==S.me||V.stream||V.busy)return;
+ const me=S.pl.find(p=>p.user_id===S.me);if(!me||!me.alive||(r.silenced||[]).includes(S.me))return;
+ V.busy=true;
+ try{V.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}catch(e){V.busy=false;return toast('🎤 تعذر فتح الميكروفون — يمكن للمضيف تخطي دورك')}
+ if(!S.room||S.room.phase!=='talk'||turnKey()!==k||S.room.speaker!==S.me){vClose(false);V.busy=false;return}
+ meter(V.stream);for(const p of S.pl)if(p.user_id!==S.me)sendOffer(p.user_id,k);
+ V.busy=false}
+async function onSignal(m){if(m.room_id!==S.rid)return;const d=m.payload,from=m.from_id;
+ try{
+  if(m.kind==='offer'){if(d.k<V.k)return;if(d.k>V.k){vClose(false);V.k=d.k}
+   const pc=mkpc(from,d.k);
+   pc.ontrack=e=>{let a=document.getElementById('a'+from);if(!a){a=document.createElement('audio');a.id='a'+from;a.className='rv';a.autoplay=true;document.body.appendChild(a)}a.srcObject=e.streams[0];a.play().catch(()=>toast('اضغط على الشاشة لتفعيل الصوت'));meter(e.streams[0])};
+   await pc.setRemoteDescription(d.sdp);(V.pend[from]||[]).forEach(c=>pc.addIceCandidate(c));V.pend[from]=[];
+   await pc.setLocalDescription(await pc.createAnswer());sendSig(from,'answer',{k:d.k,sdp:pc.localDescription})}
+  else if(m.kind==='answer'){const pc=V.pcs[from];if(pc&&d.k===V.k&&!pc.currentRemoteDescription)await pc.setRemoteDescription(d.sdp)}
+  else if(m.kind==='ice'){if(d.k!==V.k)return;const pc=V.pcs[from];if(pc&&pc.remoteDescription)await pc.addIceCandidate(d.c);else(V.pend[from]=V.pend[from]||[]).push(d.c)}
+ }catch(e){console.warn('voice',e)}}
+boot();
+</script></body></html>
